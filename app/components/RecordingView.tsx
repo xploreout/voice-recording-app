@@ -1,19 +1,46 @@
 'use client'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+
+declare global {
+  interface Window {
+    webkitSpeechRecognition: any
+    SpeechRecognition: any
+  }
+}
 
 export default function RecordingView() {
   const [isRecording, setIsRecording] = useState<boolean>(false)
   const [recordingComplete, setRecordingComplete] = useState<boolean>(false)
   const [transcript, setTranscript] = useState<string>('')
 
+  const recognitionRef = useRef<any>(null)
+
   const startRecording = () => {
     setIsRecording(true)
-    setTranscript('gust of wind')
+
+    recognitionRef.current = new window.webkitSpeechRecognition()
+    recognitionRef.current.continuous = true
+    recognitionRef.current.interimResults = true
+    recognitionRef.current.onresult = (e: any) => {
+      const { transcript } = e.results[e.results.length - 1][0]
+      setTranscript(transcript)
+    }
+    recognitionRef.current.start()
   }
 
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop()
+      }
+    }
+  },[])
+
   const stopRecording = () => {
-    setIsRecording(false)
-    setTranscript('')
+    if (recognitionRef.current) {
+      recognitionRef.current.stop()
+      setIsRecording(false)
+    }
   }
 
   const handleToggleRecording = () => {
@@ -105,4 +132,7 @@ export default function RecordingView() {
       </div>
     </div>
   )
+}
+function useEffect(arg0: () => () => void, arg1: never[]) {
+  throw new Error('Function not implemented.')
 }
